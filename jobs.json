@@ -1,0 +1,12 @@
+{
+  "updated": "2026-10-22T08:00:00Z",
+  "sample": true,
+  "jobs": [
+    {"id": "ej-1", "title": "Ingeniero/a de automatización", "company": "Empresa de ejemplo A", "location": "Zaragoza", "source": "InfoJobs", "posted": "2026-10-22", "url": ""},
+    {"id": "ej-2", "title": "Programador/a PLC", "company": "Empresa de ejemplo B", "location": "Valencia", "source": "Adzuna", "posted": "2026-10-21", "url": ""},
+    {"id": "ej-3", "title": "Ingeniero/a electrónico", "company": "Empresa de ejemplo C", "location": "Madrid", "source": "Jooble", "posted": "2026-10-19", "url": ""},
+    {"id": "ej-4", "title": "Técnico/a de mantenimiento industrial", "company": "Empresa de ejemplo D", "location": "Remoto", "source": "Adzuna", "posted": "2026-10-16", "url": ""},
+    {"id": "ej-5", "title": "Desarrollador/a de software embebido", "company": "Empresa de ejemplo E", "location": "Sevilla", "source": "InfoJobs", "posted": "2026-10-09", "url": ""},
+    {"id": "ej-6", "title": "Analista de datos", "company": "Empresa de ejemplo F", "location": "Bilbao", "source": "Jooble", "posted": "2026-09-30", "url": ""}
+  ]
+}
