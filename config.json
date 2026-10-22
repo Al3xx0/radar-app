@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "perfil": "Automatización e ingeniería industrial",
+  "puestos": [
+    "ingeniero de automatización",
+    "programador PLC",
+    "PLC",
+    "ingeniero electrónico y automático",
+    "ingeniero mecatrónico",
+    "ingeniero electromecánico",
+    "ingeniero de puesta en marcha"
+  ],
+  "similares": [
+    "técnico de automatización",
+    "ingeniero de control",
+    "commissioning",
+    "SCADA",
+    "robótica industrial"
+  ],
+  "junior": "incluir",
+  "buscar_en": ["titulo", "descripcion"],
+  "excluir": [],
+  "ubicaciones": [
+    {"nombre": "Valencia", "tipo": "local"},
+    {"nombre": "Toda España", "tipo": "nacional"}
+  ],
+  "modalidad": ["remoto", "presencial", "hibrido"],
+  "contrato": "cualquiera",
+  "sueldo_minimo_anual_bruto": null,
+  "antiguedad_maxima_dias": 30
+}

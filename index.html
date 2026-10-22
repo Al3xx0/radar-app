@@ -21,7 +21,14 @@ h1{margin:0;font-size:1.75rem;font-weight:800;letter-spacing:-.02em}
 #meta{font-size:.8rem;color:var(--muted)}
 input[type=search]{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 input[type=search]:focus-visible,.chip:focus-visible,a.job:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+details{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+summary{padding:12px 14px;cursor:pointer;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:10px}
+.grp{padding:0 14px 12px}
+.grp b{display:block;margin-bottom:6px;font-size:.8rem;font-weight:600;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+#saved{margin:0;padding:0 14px 14px;font-size:.8rem;color:var(--muted)}
 .chip{flex:none;font:inherit;font-size:.875rem;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
 .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
 #note{margin:12px 0 0;padding:10px 12px;border-left:3px solid var(--accent);background:var(--surface);font-size:.875rem;color:var(--muted)}
@@ -42,7 +49,7 @@ a.job:active{background:var(--surface)}
 <div class="wrap">
   <header><h1>Radar</h1><span id="meta"></span></header>
   <input type="search" id="q" placeholder="Buscar puesto, empresa o ciudad" aria-label="Buscar ofertas" autocomplete="off">
-  <div id="chips" role="group" aria-label="Filtrar por fuente"></div>
+  <details id="filters"><summary id="fsum">Filtros</summary><div id="fbody"></div><p id="saved"></p></details>
   <p id="note" hidden></p>
   <main id="list" aria-live="polite"></main>
 </div>
@@ -51,7 +58,11 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const days=d=>Math.max(0,Math.floor((Date.now()-new Date(d))/864e5));
-let jobs=[],src='Todas';
+let jobs=[],cfg={};
+const F={Fuente:'Todas',Lugar:'Toda España',Modalidad:'Cualquiera',Nivel:'Todos'};
+const MODE={Remoto:'remoto','Híbrido':'hibrido',Presencial:'presencial'};
+const MLAB={remoto:'remoto',hibrido:'híbrido',presencial:'presencial'};
+const isJr=j=>j.junior??/\b(junior|jr)\b/i.test(j.title);
 
 function ring(n){
   const r=10,c=2*Math.PI*r,f=Math.max(.1,1-Math.min(n,14)/14);
@@ -63,13 +74,18 @@ const group=n=>n===0?'Hoy':n<=7?'Esta semana':'Anteriores';
 function row(j){
   const n=days(j.posted),ok=/^https?:\/\//.test(j.url||'');
   const open=ok?`a class="job" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer"`:'div class="job"';
-  return `<${open}>${ring(n)}<div><h3>${esc(j.title)}</h3><p class="co">${esc(j.company)}</p><p>${esc(j.location)}, ${when(n)}</p></div><span class="src">${esc(j.source)}</span></${ok?'a':'div'}>`;
+  return `<${open}>${ring(n)}<div><h3>${esc(j.title)}</h3><p class="co">${esc(j.company)}</p><p>${esc(j.location)}${MLAB[j.modality]?', '+MLAB[j.modality]:''}, ${when(n)}</p></div><span class="src">${esc(j.source)}</span></${ok?'a':'div'}>`;
 }
 
 function render(){
   const t=norm($('#q').value);
   const list=jobs
-    .filter(j=>(src==='Todas'||j.source===src)&&norm(`${j.title} ${j.company} ${j.location}`).includes(t))
+    .filter(j=>(F.Fuente==='Todas'||j.source===F.Fuente)
+      &&(F.Lugar==='Toda España'||norm(j.location).includes(norm(F.Lugar)))
+      &&(F.Modalidad==='Cualquiera'||j.modality===MODE[F.Modalidad])
+      &&(F.Nivel==='Todos'||isJr(j))
+      &&(!cfg.antiguedad_maxima_dias||days(j.posted)<=cfg.antiguedad_maxima_dias)
+      &&norm(`${j.title} ${j.company} ${j.location}`).includes(t))
     .sort((a,b)=>new Date(b.posted)-new Date(a.posted));
   if(!list.length){$('#list').innerHTML='<p class="empty">No hay ofertas con estos filtros.</p>';return}
   let html='',g='';
@@ -78,15 +94,19 @@ function render(){
 }
 
 function chips(){
-  const names=['Todas',...new Set(jobs.map(j=>j.source))];
-  $('#chips').innerHTML=names.map(n=>`<button class="chip" aria-pressed="${n===src}" data-s="${esc(n)}">${esc(n)}</button>`).join('');
+  const local=(cfg.ubicaciones||[]).filter(u=>u.tipo==='local').map(u=>u.nombre);
+  const G={Fuente:['Todas',...new Set(jobs.map(j=>j.source))],Lugar:['Toda España',...local],Modalidad:['Cualquiera','Remoto','Híbrido','Presencial'],Nivel:['Todos','Junior']};
+  $('#fbody').innerHTML=Object.entries(G).map(([g,o])=>`<div class="grp"><b>${g}</b><div class="row">${o.map(n=>`<button class="chip" aria-pressed="${n===F[g]}" data-g="${g}" data-s="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`).join('');
+  const k=Object.keys(F).filter(g=>F[g]!==G[g][0]).length;
+  $('#fsum').textContent=k?`Filtros (${k})`:'Filtros';
 }
 
-$('#chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;src=b.dataset.s;chips();render()});
+$('#fbody').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;F[b.dataset.g]=b.dataset.s;chips();render()});
 $('#q').addEventListener('input',render);
 
-fetch('jobs.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{
-  jobs=d.jobs||[];
+Promise.all([fetch('config.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('jobs.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()})]).then(([c,d])=>{
+  cfg=c;jobs=d.jobs||[];
+  if(c.puestos)$('#saved').textContent='Búsqueda guardada: '+[...c.puestos,...(c.similares||[])].join(', ')+(c.antiguedad_maxima_dias?`. Últimos ${c.antiguedad_maxima_dias} días.`:'');
   if(d.updated)$('#meta').textContent='Actualizado '+new Date(d.updated).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   if(d.sample){const n=$('#note');n.hidden=false;n.textContent='Estas son ofertas de ejemplo. Las reales llegarán cuando conectemos las fuentes.'}
   chips();render();
